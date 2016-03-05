@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<html>
+	<head>
+		<script src="gl-matrix-min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+
+			var triangleVerticePositionBuffer;
+			var squareVerticePositionBuffer;
+			var gl;
+			var mvMatrix;  //translation matrix
+			var pMatrix;   //perspective matrix
+
+			function webGLstart(){
+				var canvas = document.getElementById("lesson01-canvas");
+				initGL(canvas);
+				initShaders();
+				initBuffers();
+
+				gl.clearColor(0.0, 0.0, 0.0, 1.0);
+				gl.enable(gl.DEPTH_TEST);
+
+				mvMatrix = mat4.create();  //this method sets up an all zero 4D matrix (can do rotations)
+				pMatrix  = mat4.create();  //same as above...
+
+				drawScene();
+  			}
+
+			function initBuffers(){
+				squareVertices = [
+         				1.0,  1.0,  0.0,
+        				-1.0,  1.0,  0.0,
+        				1.0, -1.0,  0.0,
+        				-1.0, -1.0,  0.0
+				];
+				triangleVertices = [
+					0.0,  1.0,  0.0,
+        				-1.0, -1.0,  0.0,
+       					1.0, -1.0,  0.0
+				];
+				squareVerticePositionBuffer = setupBuffer(squareVertices, 3);
+				triangleVerticePositionBuffer = setupBuffer(triangleVertices, 3);
+			}
+
+			//Buffer is the object that will be used by the graphics card.  vertices holds the 2D or 3D points.
+			//itemSize tells it how long a vertice is:  2 items for 2D (x,y), 3 items for 3D (x,y,z)
+			//After a buffer has been through this function, it has been stored in the graphics card's memory and is ready to use.
+			function setupBuffer(vertices, itemSize){
+				var buffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+				buffer.itemSize = itemSize;
+				buffer.numItems = vertices.length / itemSize;
+				return buffer;
+			}
+
+			function drawBuffer(startPosition, buffer){
+				mat4.identity(mvMatrix);  //this sets up a matrix in the center of the scene
+				mat4.translate(mvMatrix, mvMatrix, startPosition);  //this translates to where we're about to draw the object
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);  //point at the object's buffer
+				gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, buffer.itemSize, gl.FLOAT, false, 						0, 0);
+				setMatrixUniforms(); //send the move matrix and perspective matrix to the graphics card
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, buffer.numItems); //Do you feel luck punk?!  Draw!
+			}
+
+			function drawScene(){
+				gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				//mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+				mat4.perspective(pMatrix,45*Math.PI/180, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+				//first argument: field of view, second = width to height ratio of canvas, third: near clipping plane,
+				//fourth: far clipping plane (won't show anything closer than near clipping plane or farther than far clipping plane
+
+				drawBuffer([-3.0, 1.0, -10.0], triangleVerticePositionBuffer); //draw the triangle
+				//alert(squareVerticePositionBuffer.numItems);
+				drawBuffer([1.0, 1.0, -10.0], squareVerticePositionBuffer);
+			}
+
+  			function initGL(canvas) {
+    				try {
+      					gl = canvas.getContext("experimental-webgl");
+      					gl.viewportWidth = canvas.width;
+      					gl.viewportHeight = canvas.height;
+    				} catch(e) {
+    				}
+    				if (!gl) {
+      					alert("Could not initialise WebGL, sorry :-( ");
+    				}
+  			}
+
+  			function setMatrixUniforms() {
+    				gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+    				gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+  			}
+
+			var shaderProgram; //defining a global, just for the below method...
+			function initShaders(){
+				var fragmentShader = getShader(gl, "shader-fs");
+    				var vertexShader = getShader(gl, "shader-vs");
+
+    				shaderProgram = gl.createProgram();
+    				gl.attachShader(shaderProgram, vertexShader);
+    				gl.attachShader(shaderProgram, fragmentShader);
+    				gl.linkProgram(shaderProgram);
+
+    				if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      					alert("Could not initialise shaders");
+    				}
+
+    				gl.useProgram(shaderProgram);
+
+				shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    				gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+				shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+				shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+			}
+
+  			function getShader(gl, id) {
+      				var shaderScript = document.getElementById(id);
+      				if (!shaderScript) {
+          				return null;
+      				}
+
+      				var str = "";
+      				var k = shaderScript.firstChild;
+      				while (k) {
+          			if (k.nodeType == 3)
+              				str += k.textContent;
+          				k = k.nextSibling;
+      				}
+
+      				var shader;
+      				if (shaderScript.type == "x-shader/x-fragment") {
+          				shader = gl.createShader(gl.FRAGMENT_SHADER);
+      				} 
+				else if (shaderScript.type == "x-shader/x-vertex") {
+          				shader = gl.createShader(gl.VERTEX_SHADER);
+      				} 
+				else {
+          				return null;
+      				}
+
+      				gl.shaderSource(shader, str);
+      				gl.compileShader(shader);
+
+      				if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          				alert(gl.getShaderInfoLog(shader));
+          				return null;
+      				}
+
+      				return shader;
+  			}
+		</script>
+		<script id="shader-fs" type="x-shader/x-fragment">
+  			precision mediump float;
+
+  			void main(void) {
+    				gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  			}
+		</script>
+		<script id="shader-vs" type="x-shader/x-vertex">
+  			attribute vec3 aVertexPosition;
+
+  			uniform mat4 uMVMatrix;
+  			uniform mat4 uPMatrix;
+
+  			void main(void) {
+    				gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  			}
+</script>
+	</head>
+	<body onload="webGLstart()">
+		<canvas id="lesson01-canvas" style="border: none;" width="500" height="500">
+		<a href="http://learningwebgl.com/blog/?p=28">&lt;&lt; Back to Lesson 1</a>
+	</body>
+</html>
