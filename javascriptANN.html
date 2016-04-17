@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<html>
+	<head>
+		<script>
+ //This script contains the javascript "classes" (functions that return an object instance) and utility functions for a generic
+   //feedforward/backpropagation artificial neuron net (ANN).  If you make many layers then it's a deep learning network.
+    //This is my first implementation, so it will be basic and it will not necessarily have the most efficient means of doing it.
+   //Note - I've been reading about neural nets for quite some time now, to include history on Wikipedia and watching videos by professors from MIT,
+   // from India, and on Andrew Ng's Coursera machine learning course, in addition to a video tutorial by Pete Warden and many others.
+   //  (hundreds of hours total, spent trying to grok neural nets).
+   //Of particular note are:
+   // Andrew Ng, Geoffrey Hinton, (Yann Lecun is notable but goes right over my head), Pete Warden and Dave Miller for their video tutorials.
+   // It all didn't quite click for me enough to actually implement until I watched this
+   // Youtube video series:  Neural Networks Demystified by "Welch Labs":  https://www.youtube.com/watch?v=bxe2T-V8XRs
+   //I got stuck again when I started trying to implement backpropagation.  The Welch Labs video lost me there.  I got back on track again with
+   // this video by Geoffrey Hinton:  https://www.youtube.com/watch?v=46Jzu-xWIBk
+   // Watch the Welch Labs video on backprop first, don't worry if you get lost, then follow it up with Geoffrey Hinton's video above.
+   //  Note:  I think my neuron values are the same thing as "Activations" that Hinton mentions in his video.  
+
+   //And God said "Give me a whole lotta e!  Because you gotta e!"
+   //What, you gotta eat?  "No, you gotta e!"
+   //For more information about calculating e (an explanation of the process, explaining the n and e variables and the equation), see:
+   //http://webcache.googleusercontent.com/search?q=cache:DEDdypvJtpUJ:www.mathsisfun.com/numbers/e-eulers-number.html+&cd=2&hl=en&ct=clnk&gl=us
+   //The above is the Google cached page, and the below is the url to the site itself:
+   //www.mathsisfun.com/numbers/e-eulers-number.html
+   var n = 1000;
+   var e = (1 + 1/n)^n;  //This is Euler's famous e, and the equation to calculate it to an aribitrary precision n.
+
+   /*  Not going to try to use this yet - need to implement basic first, then start abstracting.
+   function neuron(numberOfWeightsPerNeuron){
+    value: Math.random(0,1),
+    weights: new Array(numberOfWeightsPerNeuron)
+   }
+   */
+   var activationFunction =  0;  //help - I am unsure whether it needs to be the same in backpropagation as it is in forward.
+				//For instance, I think the professors might be saying that I can just use the value of the neuron here when
+				//we're doing backprop.
+   //See this video at time 1:27 for this derivative:  https://www.youtube.com/watch?v=tf9p1xQbWNM
+   var derivativeOfActivationFunction = activationFunction * (1 - activationFunction);
+
+   //Going to try to use this with array literals to get an arbitrary length array
+   //without using "new Array(x)".
+   function getRandomValuesAsString(numberOfValues){
+       var returnString = "";
+       while (numberOfValues > 0){
+           returnString += Math.random(0,1);
+           if (numberOfValues > 1){
+              returnString += ",";
+           }
+           numberOfValues -= 1;
+       }
+   }
+
+
+   function LayerFactory(numberOfNeurons, numberOfWeightsPerNeuron){
+   	this.layer = {
+     		//this.neurons: new Array(this.numberOfNeurons),
+		this.neurons : [getRandomValuesAsString(numberOfNeurons)],
+     		//this.weights: new Array(this.numberOfNeurons^2)
+		this.weights : [getRandomValuesAsString(numberOfWeightsPerNeuron)]
+    	}
+
+	return this.layer;
+   }
+
+
+   function networkFactory(numberOfHiddenLayers, numberOfNeuronsInHiddenLayers, numberOfNeuronsInOutputLayer, input, expectedOutput){
+	var this.network = {
+		this.layers : [],
+		this.expectedOutput : expectedOutput,
+		this.lastOutput : [],
+		this.cost : 0,  //This is the current error, which is the MSE between the actual and expected output.  
+				//See the calculateError() function for further details, it is heavily commented.
+		//Note:  In order to take a partial derivative of the cost function to each output neuron,
+  		 //		we have to keep a copy of the output layer from the last time the network was fed forward into it.
+   		//	 	I will copy the output layer into this each time, including when we first initialize it with random values.
+		//		This will be done in the feedForward() function.
+		this.lastCost : 0,
+   		//When backpropagating, we make another layer for each one in the network and make the error affect each neuron in turn.
+		//this.backPropLayers : []  //we don't back prop into the input layer, so we actually have a backprop array of size
+						//network.layers.length - 1.  Hmmm, still undecided as to whether I need this.
+	}
+
+	inputLayer = LayerFactory(input.length, numberOfNeuronsInHiddenLayers);
+	inputLayer.neurons = input;
+	this.network.layers.push(inputLayer);
+
+	for (i = 0; i < numberOfHiddenLayers; i++){
+		this.layers.push(LayerFactory(numberOfNeuronsInHiddenLayers, numberOfNeuronsInHiddenLayers));
+	}
+
+	var outputLayer = LayerFactory(numberOfNeuronsInOutputLayer, 0);
+	this.network.layers.push(outputLayer);
+
+	return this.network;
+   } //end networkFactory()
+
+
+   //This function is the main control loop to do feed forward.  It calls the feed foward helper function below for each layer in the network
+   //in the proper order:  hidden1, hidden2, hidden3, ..., output.  (never on the input layer because those neurons don't get changed by
+   //anything but new incoming values from outside the network)
+   function feedForward(network){
+        //Because the first network layer (input) is at the i = 0 position, I'm skipping it, as we don't run the feedforward on the input layer.
+        //This is because the way I've written the feedforward, it's gathering values into a layer from the previous layer.  The input layer
+        //has no previous layer.  So we start at i = 1.
+        for (i = 1; i < network.layers.length; i++){
+            runLayerFeedForward(network.layers[i], network.layers[i - 1]);
+        }
+	network.lastOutput = network.layers[network.layers.length - 1]; //copy the last layer (output layer) to lastOutput.
+			//lastOutput will be used later when getting the output layer neuron difference (delta) between this feedfoward run
+			//and the last one.  In the tutorials, this is called (dCost / dOutputNeuron sub j) (this is a partial derivative
+			//of a particular neuron in the output with respect to the cost function of the overal output (how different it is from ideal).
+			//We will do that difference function to each neuron in the output layer in order to start backpropagating error.
+			//The cost will be calculated in the calculateError() function, and the differences will be done in backpropagate().
+   }
+
+
+   //This function feeds forward input values by iterating through each neuron in a layer.
+   //It's actually getting values from the layer before the one it's working on.  This function should therefore never be run on the input layer.
+   function runLayerFeedForward(thisLayer, previousLayer){
+        for (i = 0; i < thisLayer.neurons.length; i++){
+            thisLayer.neurons[i] = runActivationFunctionForNeuron(i, previousLayer);
+	}
+   }
+
+
+   //This function will be ran once for each neuron in a layer when feeding forward.  The new value of the neuron we are running this function for
+   // will be the return value of this function.
+   //TO DO:  Replace the multiplications in the for loop with just placing the elements in two arrays then using a more efficient matrix multiplication
+   // See the following javascript numpy replacement:  https://github.com/nicolaspanel/numjs
+   function runActivationFunctionForNeuron(thisLayerNeuronPosition, previousLayer){
+    	var z = 0;
+    	for (i = 0; i < previousLayer.neurons.length; i++){
+     		z += previousLayer.neurons[i] * previousLayer.weights[i * previousLayer.neurons.length];
+    	}
+    	//This is a basic activation function for a neuron.  We mapped the current neuron to all the neurons connected to it from the previous layer
+    	//in the for loop above.
+    	return 1/(1 + (1 / e ^ z));
+   }
+
+
+   //This is how you "train" an artificial neural network, by backpropagating error after calculating an error value
+   // (the difference between expected and actual values at the output layer after doing feedforward).
+   function calculateError(network){
+	//See this video by Jeff Heaton on how to calculate error:  
+        //https://www.youtube.com/watch?v=U4BTzF3Wzt0
+        //Three methods:  Mean Squared Error (MSE), Root Mean Squared Error (RMSE or RMS), and ArcTan Error (used with quickprop).
+        //Mean Squared Error:  (ideal value - actual value1)^2 + (ideal value2 - actual value2)^2  .... (ideal value n - actual value n)^2,
+	//			all divided by n (the number of samples)
+        //Root Mean Squared Error:  take the square root of the above (the MSE).
+	//ArcTan Error:  arctan^2(ideal value1 - actual value1) + arctan^2(ideal value2 - actual value2) + arctan^2(ideal value n - actual value n)
+	//			all divided by n.
+	//Finally, most Youtube tutorials use a slightly modified MSE for the cost function (they take half the MSE):  cost = (1/2) * MSE.
+	//This video is a good example:  https://www.youtube.com/watch?v=gl3lfL-g5mA
+
+	//So I'm using the last example, the cost function, which is the MSE * 1/2 (or MSE / 2).
+
+	for (i = 0; i < actualOutput.length; i++){
+		network.cost += (idealOutput[i] - actualOutput[i])^2  
+		//In tutorials/lectures they refer to ideal output as 'y' and actual output as 'h sub w (x)'.  I detest the notation because there
+		//are too many symbols - why not just call output neuron actual values 'h'?
+	}
+	cost = cost / actualOutput.length;  //This is the "all divided by n" step in the MSE equation above.
+	cost = cost / 2;  //This is the MSE * 1/2 step from the "slightly modified MSE" equation above.
+   }
+
+
+   //So, these are the Youtube vids that I have used so far when trying to understand this algorithm (this time, there's been previous attempts):
+   //https://www.youtube.com/watch?v=SvAEX5taVKk&ebc=ANyPxKpYJwxAESmptGGPmHGel1bqiHG45KiqICmAbcjzVTv8XyxP-CfNtcYY4A3NglKsgb7xWuSn
+   //https://www.youtube.com/watch?v=IruMm7mPDdM&ebc=ANyPxKousVVr3_y4WYTYUDF693WR6aJPfpZHUrTYph5LzDNAYftwXqtXPG8-dR9AocEiXxfjiMjD
+   //https://www.youtube.com/watch?v=gl3lfL-g5mA  and his code repository on github: https://github.com/SullyChen/FFANN/blob/master/cpps/FFANN.cpp
+   //https://www.youtube.com/watch?v=GlcnxUlrtek  (really too fast for me, not enough detail due to currently weak calculus ability)
+   //https://www.youtube.com/watch?v=UnWL2w7Fuo8  IIT lecture, kind of long - these guys go really slow and talk slow due to not being native
+	//English speakers, you have to have a lot of patience.  I've taken to playing at x1.5 speed.
+        //I really like the way that professor lays out the math and the graphs.  In spite of my weak calculus, I understand perfectly.
+	//This is "Prof. P. Dasgupta" (that's what's in the Youtube video description, don't know his first name).
+	//He's using 1/2 Root Means Squared for his activation function.  I'm keeping 1/2 MSE for mine.  Any of the methods will work.
+   function backpropagate(network){
+	//var cost = calculateError(network);
+	//var costDelta = cost - network.lastCost;
+	//var outputLayer = network.layers[layers.length - 1];
+
+	var outputLayerIndex = network.layers[network.layers.length - 1];
+
+	var deltaL = new Array(network.layers[outputLayerIndex].length);  //make a new array of the same length as the output layer
+	for (i = 0; i < deltaL.length; i++){
+		deltaL[i] = network.layers[outputLayerIndex].neurons[i] - network.expectedImage[i];
+	}
+
+	var deltaL_Minus1 = new Array(network.layers);
+
+	//Going to multiply the above by the derivative of the activation function (not sure if the above step is needed, may be
+	//actually multiplying by the step above that.
+	var activationDerivativeOfOutput = network.layers[network.layers.length - 2].weights
+	delta[i] = (outputLayer[i] - network.expectedOutput[i]) * activationDerivative;
+
+	//Here, I'm going to calculate the error for each neuron in the output layer by calculating all the way back through all the neurons
+	//that affect it (whichever neurons you can reach while going back once):
+	for (i = network.layers.length - 1; i == 0; i++){
+		backpropagateLayer(network.layers[i], network.layers[i - 1])
+	}
+   }
+
+    //Should copy the output layer to lastOutput before calling this, as we're overwriting the output layer (and all weights) with new values.
+   function backpropagateLayer(thisLayer, previousLayer){
+	for (i = 0; i < thisLayer.length; i++){
+		backpropagateNeuron(thisLayer[i], previousLayer);
+	}
+   }
+
+   function backpropagateNeuron(neuron, previousLayer){
+	//Wj (neuron from previous layer) = Wj + learningRate (usually they use the alpha symbol) * (derivativeOfActivationFunction * thatWeightConnectedNeuronValueInPreviousLayer);
+	var newNeuronValue = 0;
+	for (i = 0; i < previousLayer.length; i++){
+	   	newNeuronValue += neuron + learningRate * derivativeOfActivationFunction * previousLayer[i];
+	}
+	newNeuronValue = newNeuronValue / previousLayer.length;
+	neuron = newNeuronValue;
+   }
+
+
+   function trainNetwork(){
+    	//Going to use the lowest resolution image possible to try to avoid out of memory errors and speed up computation with the CPU.
+    	//Later, will try to use the GPU as well, then test ways to make the layers bigger so I can use higher resolution images.
+    	var resolutionOfImage = (320 * 240);
+	var image = <path to image>;  //change to valid file path or URL
+	prepareImagePixelRangesForInputLayer(image);
+	var expectedImage = <path to image>; //change to a valid file path or URL
+	prepareImagePixelRangesForInputLayer(expectedImage);
+
+	//Just copying the network constructor signature here for reference:  networkFactory(numberOfHiddenLayers, numberOfNeuronsInInputLayer, numberOfNeuronsInHiddenLayers, numberOfNeuronsInOutputLayer, input, expectedOutput)
+    	var ANN = networkFactory(5, resolutionOfImage, (320 * 240) /* this is entirely questionable memory-wise */, 1, image, expectedImage)  
+	//I want the output layer to tell me whether the letter is an 'A', and it only needs one neuron.  That neuron's value will tell me the
+	//network's confidence that its input image is an 'A'.
+
+	//For each training sample I give the neural network, I need to feedforward, calculate error, and backpropagate many times until
+	//the I know the network has converged or failed to converge (found a minima that it wants to stay at).  If it fails to converge (diverges,
+	//which means it's bouncing around), then I can start reducing the training rate or fiddle with the momentum.  Failing that, I can
+	//start reinitializing the neural net with new random values and try again a bunch of times.  Maybe I could make an engine that
+	//continuously tries those steps until it finds a good minima (which is something I'll have to make a test for).
+	//Note:  continuously trying again with new random values and then testing is essentially a genetic algorithm.
+	//The tests for genetic algorithms have to be written separately and are not generalized tests or a standard equation.
+    	//Make the network feedforward:
+	runNetworkFeedForward(ANN);
+
+    	//Calculate error here.
+	
+
+    	//Backpropagate the error here:
+
+    
+   } //end trainNetwork()
+
+
+   function prepareImagePixelRangesForInputLayer(image){
+    	//This function changes the grayscaled pixel values from a range of 0-255 to a range of 0-1 while keeping their relative values intact.
+    	for (i = 0; i < image.length; i++){
+     		image[i] = image[i] / 255;
+    	}
+   } //end prepareImagePixelRangesForInputLayer()
+
+		</script>
+	</head>
+	<body>
+  		<canvas id="Image"></canvas>
+  		<canvas id="InputLayer"></canvas>
+  		<canvas id="HiddenLayer1"></canvas>
+  		<canvas id="HiddenLayer2"></canvas>
+  		<canvas id="HiddenLayer3"></canvas>
+  		<canvas id="OutputLayer"></canvas>
+	</body>
+</html>
