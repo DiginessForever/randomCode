@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			var a = {
+				propertyName1 : "some value 1",
+				propertyName2 : "value 2",
+				propertyName3 : "value 3"
+			};
+
+			function run(){
+				for (property in a){
+					console.log(property);
+					console.log(a[property]);
+				}
+			};
+
+			function test2(){
+				var b = {
+
+
+				};
+
+				if (Object.keys(b).length == 0){
+					console.log("b is empty");
+				}
+			}
+
+			function test3(){
+				for (i = 0; i < Object.keys(a).length; i++){
+					console.log(Object.keys(a)[i]);
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<input type="button" value="run test" onclick="test3()"/>
+	</body>
+</html>
