@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+   <!-- From: http://humaan.com/web-3d-graphics-using-three-js  -->
+        <head>
+                <meta charset=utf-8>
+                <title>My first Three.js app</title>
+                <style>
+                        body { margin: 0; }
+                        canvas { width: 100%; height: 100% }
+                </style>
+        </head>
+        <body>
+                <script src="./three.min.js"></script>
+                <script src="./THREEx.KeyboardState.js"></script>
+                <script>
+                        // Our Javascript will go here.
+                        var camera, scene, renderer, geometry, material, mesh, controls;
+                        var f = false;
+                        var colorState = null;
+
+                        //Add keyboard control (depends on THREEx.KeyboardState.js) - must be global to work on all sub functions.
+                        var keyboard = new THREEx.KeyboardState();  //Will do checks in update() Function.
+
+                        init();
+                        animate();
+
+                        function init() {
+                                scene = new THREE.Scene();
+                                //The next 4 variables set up the camera's "view frustrum", a pyramid shape defines what it can see
+                                var view_angle = 75;
+                                var aspect_ratio = window.innerWidth / window.innerHeight;
+                                var near = 0.1;
+                                var far = 1000;
+                                camera = new THREE.PerspectiveCamera( view_angle, aspect_ratio, near, far );
+                                camera.position.z = 500;
+                                scene.add(camera);
+
+                                //geometry = new THREE.CubeGeometry(200, 200, 200);
+                                //material = new THREE.MeshNormalMaterial();
+                                //material = new THREE.MeshLambertMaterial({
+                                //      vertexColors:  THREE.VertexColors,
+                                //      shading:  THREE.FlatShading,
+                                //      overdraw:  0.5
+                                //});
+                                //phongMaterial = new THREE.MeshPhongMaterial( { vertexColors: THREE.FaceColors, ambient: 0x55555,
+                                //      color: 0x555555, specular: 0xffffff, shininess: 50, shading: THREE.SmoothShading } );
+                                //mesh = new THREE.Mesh(geometry, phongMaterial);
+                                //mesh.geometry.__dirtyVertices = true;
+                                //mesh.geometry.__dirtyColors = true;
+                                //mesh.geometry.dynamic = true;
+                                //scene.add(mesh);
+
+                                var materialArray = [];
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg1.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg2.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg3.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg4.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg5.jpg'), side: THREE.DoubleSide}));
+				materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg6.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg7.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg8.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg9.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg10.jpg'), side: THREE.DoubleSide}));
+				materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg11.jpg'), side: THREE.DoubleSide}));
+                                materialArray.push(new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture('./images/bldg12.jpg'), side: THREE.DoubleSide}));
+                                var cubeBldgsMaterial = new THREE.MeshFaceMaterial(materialArray);
+                                var cubeBldgsGeom = new THREE.CubeGeometry(200, 200, 200);
+                                mesh = new THREE.Mesh(cubeBldgsGeom, cubeBldgsMaterial);
+                                mesh.position.set(0, 0, -100);
+                                scene.add(mesh);
+
+                                //var directionalLight = new THREE.DirectionalLight(0xffffff,1);
+                                //directionalLight.position.set(7,5,-5);
+                                //scene.add(directionalLight);
+                                var ambientLight = new THREE.AmbientLight(0xffffff);
+                                scene.add(ambientLight);
+
+                                renderer = new THREE.WebGLRenderer();
+                                //renderer = new THREE.CanvasRenderer();
+                                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                                document.body.appendChild(renderer.domElement);
+
+                                //Create an event listener that resizes the renderer with the browser window.
+                                //The scene will always be fitted to the browser window size.
+                                window.addEventListener('resize', function() {
+                                        var WIDTH = window.innerWidth;
+                                        var HEIGHT = window.innerHeight;
+                                        renderer.setSize(WIDTH, HEIGHT);
+                                        camera.aspect = WIDTH / HEIGHT;
+                                        camera.updateProjectionMatrix();
+                                });
+
+                                //Add OrbitControls so that we can pan around with the mouse.
+                                //Enables zoom with mouse wheel and panning around the model with the mouse by clicking and dragging.
+                                //controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+                                //Note:  a bunch of examples are available here:  https://stemkoski.github.io/Three.js/
+                        }
+
+                        function animate() {
+                                requestAnimationFrame(animate);
+                                update();
+                                //mesh.rotation.x += 0.01;
+                                //mesh.rotation.y += 0.02;
+                                renderer.render(scene, camera);
+                                //controls.update();
+                        }
+
+                        function update() {
+                                //This is a good movement script to look at for more improvements / control:
+                                //view-source:https://stemkoski.github.io/Three.js/Mesh-Movement.html
+                                if (keyboard.pressed('up')){
+                                        mesh.position.y += 10;
+                                }
+                                if (keyboard.pressed('down')){
+                                        mesh.position.y -= 10;
+                                }
+                                if (keyboard.pressed('left')){
+                                        mesh.position.x -= 10;
+                                }
+                                if (keyboard.pressed('right')){
+                                        mesh.position.x += 10;
+                                }
+                                if (keyboard.pressed('w')){
+                                        mesh.position.z -= 10;
+                                }
+                                if (keyboard.pressed('s')){
+                                        mesh.position.z += 10;
+                                }
+				if (keyboard.pressed('q')){
+                                        mesh.rotation.y -= 0.2;
+                                }
+                                if (keyboard.pressed('e')){
+                                        mesh.rotation.y += 0.2;
+                                }
+				if (keyboard.pressed('r')){
+                                        mesh.rotation.x -= 0.2;
+                                }
+                                if (keyboard.pressed('f')){
+                                        mesh.rotation.x += 0.2;
+                                }
+                                if (f){
+                                        f = document.getElementById('fileinput').files[0];
+                                        repeatFileRead();
+                                }
+                        }
+
+                        /**  The above is all you need for the basic setup - below I have extra functionality for loading 3d objects and other stuff  **/
+
+
+                        function JSONobjectLoader(filePath){
+                                var loader = new THREE.JSONLoader();
+                                loader.load( filePath, function(geometry){
+                                var material = new THREE.MeshLambertMaterial({color: 0x55B663});
+                                mesh = new THREE.Mesh(geometry, material);
+                                scene.add(mesh);
+                                });
+                        }
+
+                        function readInResponseToButton(){
+                                f = document.getElementById('fileinput').files[0];
+                                repeatFileRead();
+                        }
+
+                        function readSingleFile(e) {
+                                f = e.target.files[0];
+                                repeatFileRead();
+                        }
+
+                        function repeatFileRead(){
+                                        var contents = "";
+                                        var r = new FileReader();
+                                        r.onload = function() {
+                                                var contents = r.result;
+                                                /*
+                                                console.log( "Got the file.n"
+                                                        +"name: " + f.name + "n"
+                                                        +"type: " + f.type + "n"
+                                                        +"size: " + f.size + " bytesn"
+                                                        + "starts with: " + contents.substr(1, contents.indexOf("n"))
+                                                );
+                                                */
+                                                //console.log(contents);
+                                                //Put the below commented out mesh coloring here....
+                                                if(contents.indexOf("Reply from" > -1)){
+                                                        if (colorState == null){
+                                                                mesh.position.z += 100;
+                                                                colorState = "green";
+                                                        }
+                                                        if (colorState == "red"){
+                                                                /*
+                                                                for (i = 0; i < mesh.geometry.faces.length - 1; i++){
+                                                                        //mesh.geometry.faces[i].color.set("green");
+                                                                        mesh.geometry.faces[i].color.setHex(0x00FF00);
+                                                                }
+                                                                //mesh.geometry.__dirtyColors = true;
+                                                                mesh.geometry.needsUpdate = true;
+                                                                */
+                                                                //radians = degrees * (pi/180)
+                                                                //degrees = radians * (180/pi)
+                                                                mesh.rotateY(90 * (Math.PI/180));
+                                                                mesh.position.z += 100;
+                                                                colorState = "green";
+                                                        }
+                                                        //possible line:  mesh.material.needsUpdate = true;
+                                                }
+                                                else {
+                                                        if (colorState == null){
+                                                                mesh.position.z -= 100;
+                                                                colorState = "red";
+                                                        }
+                                                        if (colorState == "green"){
+                                                                        /*
+                                                                for (i = 0; i < mesh.geometry.faces.length - 1; i++){
+                                                                        //mesh.geometry.faces[i].color.set("red");
+                                                                        mesh.geometry.faces[i].color.setHex(0xFF0000);
+                                                                }
+                                                                //mesh.geometry.__dirtyColors = true;
+                                                                mesh.geometry.needsUpdate = true;
+                                                                */
+                                                                mesh.rotateY(270 * (Math.PI/180));
+                                                                mesh.position.z -= 100;
+                                                                colorState = "red";
+                                                        }
+                                                }
+                                        }
+                                        r.readAsText(f);
+                                        r.close();
+                        }
+
+
+                        window.onload = function () {
+                                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                                        document.getElementById('fileinput').addEventListener('change', readSingleFile, false);
+                                        console.log("file listener added");
+                                }
+                                else {
+                                        console.log("The File APIs are not fully supported by your browser.");
+                                }
+                                //regexPingFailed = "^.*Request timed out.*";
+                                //regexPingSucceeded = "Reply from";
+                        }
+                </script>
+                <input type="file" id="fileinput" />
+                <input type="button" onclick="readInResponseToButton()"/>
+        </body>
+</html>
