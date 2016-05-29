@@ -1,0 +1,53 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/01/Mux8Way16.hdl
+
+/**
+ * 8-way 16-bit multiplexor:
+ * out = a if sel == 000
+ *       b if sel == 001
+ *       etc.
+ *       h if sel == 111
+ */
+
+CHIP Mux8Way16 {
+    IN a[16], b[16], c[16], d[16],
+       e[16], f[16], g[16], h[16],
+       sel[3];
+    OUT out[16];
+
+    PARTS:
+    // Put your code here:
+    Not(in=sel[2],out=notSel100);
+    Not(in=sel[1],out=notSel010);
+    Not(in=sel[0],out=notSel001);
+    
+    And3Way(a=notSel100,b=notSel010,c=notSel001,out=sel000);
+    And3Way(a=notSel100,b=notSel010,c=sel[0],out=sel001);
+    And3Way(a=notSel100,b=sel[1],c=notSel001,out=sel010);
+    And3Way(a=notSel100,b=sel[1],c=sel[0],out=sel011);
+    And3Way(a=sel[2],b=notSel010,c=notSel001,out=sel100);
+    And3Way(a=sel[2],b=notSel010,c=sel[0],out=sel101);
+    And3Way(a=sel[2],b=sel[1],c=notSel001,out=sel110);
+    And3Way(a=sel[2],b=sel[1],c=sel[0],out=sel111);
+    
+    CopyIfTrue16bit(a=a, sel=sel000, out=out1);
+    CopyIfTrue16bit(a=b, sel=sel001, out=out2);
+    CopyIfTrue16bit(a=c, sel=sel010, out=out3);
+    CopyIfTrue16bit(a=d, sel=sel011, out=out4);
+    CopyIfTrue16bit(a=e, sel=sel100, out=out5);
+    CopyIfTrue16bit(a=f, sel=sel101, out=out6);
+    CopyIfTrue16bit(a=g, sel=sel110, out=out7);
+    CopyIfTrue16bit(a=h, sel=sel111, out=out8);
+    
+    Or16(a=out1,b=out2,out=out9);
+    Or16(a=out3,b=out4,out=out10);
+    Or16(a=out5,b=out6,out=out11);
+    Or16(a=out7,b=out8,out=out12);
+    
+    Or16(a=out9,b=out10,out=out13);
+    Or16(a=out11,b=out12,out=out14);
+    
+    Or16(a=out13,b=out14,out=out);
+}
