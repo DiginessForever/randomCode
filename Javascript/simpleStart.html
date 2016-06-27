@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<script src="./leaflet.js"></script>
+		<link rel="stylesheet" type="text/css" href="./leaflet.css" />	
+		<script type="text/javascript">
+			function initmap(){
+			 	var map1 = L.map('map');
+				map1.setView([38.642433, -90.255372],9);
+			 
+				// add an OpenStreetMap tile layer
+				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+			    		attribution: '&amp;copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+			 	}).addTo(map1);
+
+				var scale = L.control.scale();
+				scale.addTo(map1);
+			}
+		</script>
+		<style>
+			#map {
+			  position: absolute;
+			  top: 0;
+			  right: 0;
+			  left: 0;
+			  bottom: 0;
+			  top: 0;
+			  z-index: 0;
+			}
+		</style>
+	</head>
+
+	<body onload="initmap()">
+		<div id='map'></div>
+	</body>
+</html>
