@@ -1,0 +1,8 @@
+"type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [38.642433, -90.255372]
+  },
+  "properties": {
+    "name": "Musuem"
+  }

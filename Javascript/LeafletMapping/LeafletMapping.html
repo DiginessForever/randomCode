@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script type="text/javascript" src="./jquery.2.2.4.min.js"></script>
+<!-- The next two scripts are for Leaflet, a javascript API that grabs tiles from a map server for us and displays the location & zoom we tell it. -->
+
+<script type="text/javascript" src="./leaflet.js"></script>  <!-- This contains the main leaflet code -->
+<link rel="stylesheet" type="text/css" href="./leaflet.css" />  <!-- CSS specifies look and feel for your web page by giving html elements
+										their specific settings (width, height, color, etc) -->
+<script src="./LeafletOmnivore.1.0.0.js"></script>
+<script src="./csv2geojson.js"></script>
+<script type='text/javascript'>
+	//The following is the W3C HTML5 enabled geolocation features, which attempt to get exact geolocation from the client device (cell phone)
+	//It may rely on Google services to get information from your IP address (ISP location), nearby wifi SSIDs which have had the location mapped,
+	//and perhaps the GPS of your phone.  This portion is kicked off by calling geoFindMe().  Untested.
+	//https://en.wikipedia.org/wiki/W3C_Geolocation_API
+	//https://www.mozilla.org/en-US/firefox/geolocation/  (functionality and configuration will vary by browser type)
+	//Note that the user will get an HTML5 related scary looking notice about giving out information about their location - this is good -
+	//your site should definitely have a specific purpose where it makes sense for the user to give the information to you.
+
+	//The idea of including this section is ultimately to get the lat/long position and use it to call the appropriate location map tile with
+	//Leaflet.
+	//Note:  because different accuracy sources are used, the lat/long accuracy may vary widely.  We will need a way of determining which
+	//location service was used to determine how accurate the position should be.  GPS (very accurate), wifi (reasonably accurate),
+	//ISPs (not very accurate at all).
+	//Future ideas - perhaps some way to use radio beacons in the area to determine position, which would allow you to be
+	//certain no one was tracking you and gathering profile information for advertising or some other indeterminate purpose.
+	//Decoupling Google functionality from this will therefore be an objective.
+	var altitude = 0;
+	var accuracy = 0;
+	var lat = 0;
+	var long = 0;
+	function geoFindMe() {
+	    if(navigator.geolocation) {
+		navigator.geolocation.getCurrentPosition(success, error, geoOptions);
+	    } else {
+		alert("Geolocation services are not supported by your web browser.");
+	    }
+	}
+
+	function success(position) {
+	    lat = position.coords.latitude;
+	    long = position.coords.longitude;
+	    altitude = position.coords.altitude;
+	    accuracy = position.coords.accuracy;
+	    //alert("lat: " + lat + " long: " + long);
+	}
+
+	function error(error) {
+	    alert("Unable to retrieve your location due to " + error.code + ": " + error.message);
+	}
+
+	var geoOptions = {
+	    enableHighAccuracy: true,
+	    maximumAge: 30000,
+	    timeout: 27000
+	};
+</script>
+
+
+
+<script type='text/javascript'>
+	//Here's the leaflet code, gotten from:  https://switch2osm.org/using-tiles/getting-started-with-leaflet/
+	
+	var map;	   //This is the top level object where the tiles and the data layers go.
+	var ajaxRequest;
+	var plotlist;
+	var plotlayers=[]; //Layers are where we put data locations.  
+			   //These are superimposed over the map tiles (which come from open online sites) using Leaflet.
+
+	var inputFile = "";
+
+	/*
+	var jsonMimeType = "application/json;charset=UTF-8";
+		$.ajax({
+		 type: "GET",
+		 url: './SimplestExampleGeoJSON.json',
+		 beforeSend: function(x) {
+			if(x && x.overrideMimeType) {
+				x.overrideMimeType(jsonMimeType);
+			}
+		 },
+		 dataType: "json",
+		 success: function(data){
+		  	// do stuff...
+			inputFile = data;
+		 }
+	});*/
+
+	data = {
+  			"type": "Feature",
+  			"geometry": {
+    				"type": "Point",
+    				"coordinates": [38.642433, -90.255372]
+  			},
+  			"properties": {
+    				"name": "Musuem"
+  			}
+	};
+
+	function initmap() {
+		//AJAX is a method of using javascript to talk to the server without doing web page reloads.
+		//It is what Google maps uses to let you pan and zoom.
+		//This series of functions below let us ask the server (OpenStreetMap) to give us the markers it has for the 
+		//location window we've specified.
+		ajaxRequest=getXmlHttpObject();
+		if (ajaxRequest==null) {
+			alert ("This browser does not support HTTP Request");
+			return;
+		}
+
+		// set up the map
+		map = new L.Map('map'); //The 'map' argument points at the <div> with id='map'.
+
+		// create the tile layer with correct attribution
+		var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';   //z:  zoomlevel (how close in we are).  
+										  //x:  longitude (east/west position).  
+										  //y:  latitude (north/south position).
+										  //We do not substitute numbers here, the {} specify that the
+										  //numbers we specify elsewhere will go there.
+		var osmAttrib='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'; //Map legend at lower right.
+		var osm = new L.TileLayer(osmUrl, {minZoom: 8, maxZoom: 12, attribution: osmAttrib});		
+
+		// start the map in Saint Louis!
+		//map.setView(new L.LatLng([38.642433, -90.255372], 11));
+		map.setView(new L.LatLng(38.642433, -90.255372));
+		map.setZoom(11);
+		map.addLayer(osm);
+
+		askForPlots();
+		//omnivore.geojson('./test.geojson')
+		//data2 = $.parseJSON('./test.geojson');
+		//data2 = $.parseJSON(data);
+/*
+		csvString = $.getJSON('test.geojson');
+		csv2geojson.csv2geojson(csvString, {
+		    latfield: 'lat',
+		    lonfield: 'lon',
+		    delimiter: ','
+		}, function(err, data) {
+			if (err != undefined && err != null){
+				console.log(err);
+			}
+			omnivore.geojson(data)
+			    .on('ready', function() {
+				console.log('geojson loaded');
+			    })
+			    .addTo(map);
+		});
+*/
+		
+		//omnivore.geojson('./SimplestExampleGeoJSON.json').addTo(map);
+		map.on('moveend', onMapMove);
+	}
+
+	function getXmlHttpObject() {
+		if (window.XMLHttpRequest) { return new XMLHttpRequest(); }
+		if (window.ActiveXObject)  { return new ActiveXObject("Microsoft.XMLHTTP"); }
+		return null;
+	}
+
+	function askForPlots() {
+		// request the marker info with AJAX for the current bounds
+		var bounds=map.getBounds();
+		var minll=bounds.getSouthWest();
+		var maxll=bounds.getNorthEast();
+		var msg='leaflet/findbybbox.cgi?format=leaflet&bbox='+minll.lng+','+minll.lat+','+maxll.lng+','+maxll.lat;
+		ajaxRequest.onreadystatechange = stateChanged;
+		ajaxRequest.open('GET', msg, true);
+		ajaxRequest.send(null);
+	}
+
+	function stateChanged() {
+		// if AJAX returned a list of markers, add them to the map
+		if (ajaxRequest.readyState==4) {
+			//use the info here that was returned
+			if (ajaxRequest.status==200) {
+				plotlist=eval("(" + ajaxRequest.responseText + ")");
+				removeMarkers();
+				for (i=0;i<plotlist.length;i++) {
+					var plotll = new L.LatLng(plotlist[i].lat,plotlist[i].lon, true);
+					var plotmark = new L.Marker(plotll);
+					plotmark.data=plotlist[i];
+					map.addLayer(plotmark);
+					plotmark.bindPopup("<h3>"+plotlist[i].name+"</h3>"+plotlist[i].details);
+					plotlayers.push(plotmark);
+				}
+			}
+		}
+	}
+
+	function removeMarkers() {
+		for (i=0;i<plotlayers.length;i++) {
+			map.removeLayer(plotlayers[i]);
+		}
+		plotlayers=[];
+	}
+
+	// then add this as a new function...
+	function onMapMove(e) { askForPlots(); }
+</script>
+
+<script type='text/javascript'>
+	//This is the section with the functions to load files containing the location data, then put them into map layers.
+	//Note that it relies on jquery.  Jquery is a convenience API which makes things like loading files or selecting html elements
+	//to operate on easier.
+	//My website source/tutorial for this section was:  http://maptimeboston.github.io/leaflet-intro/
+	// load GeoJSON from an external file
+	/*
+	function loadGeoJSON(filename){
+		 $.getJSON(filename,function(data){
+		 	// add GeoJSON layer to the map once the file is loaded
+		 	L.geoJson(data).addTo(map);
+		 });
+	}
+	*/
+
+//I've found another Javascript API, LeafletOmnivore, which allows you to load all kinds of location data file types with one very
+//simple function call:  https://github.com/mapbox/leaflet-omnivore   (it was referred to at the bottom of the above tutorial page -
+//the leaflet-intro, and it works with Leaflet.js and Mapbox.js)
+//Just do this function call:  omnivore.csv(filename).addTo(map);
+//where filename is your location data file.  You can substitute one of the below formats for csv in that line.  map is the name of your
+//map object (it was created in the initmap() function at the top of this page.
+//Omnivore supports the following formats (with the one single function call):  GeoJSON, csv, GPX, KML, WKT, TopoJSON, Encoded Polylines
+	/*  Example:
+		var map = L.mapbox.map('map', 'mapbox.streets')
+		    .setView([38, -102.0], 5);  //We already have a map and don't need to make another, so we don't use this again on this page.
+
+		omnivore.csv('a.csv').addTo(map);
+		omnivore.gpx('a.gpx').addTo(map);
+		omnivore.kml('a.kml').addTo(map);
+		omnivore.wkt('a.wkt').addTo(map);
+		omnivore.topojson('a.topojson').addTo(map);
+		omnivore.geojson('a.geojson').addTo(map);
+		omnivore.polyline('a.txt').addTo(map);
+	*/
+	//I think that pulling it in like this automatically adds a layer.  That probably means that there's a different way to customize the
+	//layer with styles.  See the documentation at the github link for the API (above) on how to do a custom layer with styles.
+</script>
+<script type='text/javascript'>
+	window.onload = function() {
+		//geoFindMe();
+		initmap();
+	}
+
+	window.onunload = function() {
+		//This is just to make sure that the browser sees the pages as unloaded when they leave the page, so that if they come back
+		//with the back or forward button, the window.onload() handler above will fire again.  This does not need to have any content
+		//for this to happen.
+	}
+</script>
+
+<!-- Later possible additions people could hack together off the top of my head:
+	1.  We could figure out a way to display Jekyll data and the above in the same webpage (just having multiple divs
+		and moving things around to make them fit).
+	2.  We could work together to have an automatic set of data location feeds from various organizatons and keeping those updated.
+	3.  We could make another set of functions with AJAX calls, and have a server that keeps track of people's locations while they drive.
+		This would mean local traffic redirection around accidents or major slow downs.  It could be free of advertiser location profiling
+		if maintained by a private org like us.
+	4.  We could have automatic tag color updating for food establishments according to their last food safety inspection.
+	5.  We could have automatic indicators of # stars / $$ level of business establishments, fed by reviews.
+	6.  Maybe weather safety functionality fed by a local weather radar / station personnel.
+	7.  Tweet interface - people could put #someLocation - and a bot could put tweets up in real time over the map by scanning Twitter.
+	
+	Long range possibilities (through interaction of this functionality with deeper analysis routines and graphs from APIs like Jekyll:
+		It would be really nice if we could color areas by metrics like school standardized scores, violence ratings / robberies,
+		#jobs/paylevel available (potentially by exact business location as well), 
+		adjudication status of cases (maybe with pins over a courthouse),
+		#of regulations versus inspectors - potentially linked with feed coming from legislature site (Do any of them deconflict their
+		laws/regulations with past laws and remove or overhaul old laws that conflict?  Maybe we could encourage that.)
+-->
+</head>
+<body>
+	<div id='map' width="100%" height="100%"></div>
+</body>
+</html>
+
