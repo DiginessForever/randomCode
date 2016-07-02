@@ -1,0 +1,20 @@
+{
+	"type":  "FeatureCollection",
+	"features": [
+		{
+			"type": "Feature",
+			"geometry": {
+				"type": "Point",
+				"coordinates": [
+					-89.8690442, 
+					38.5289369
+				]
+			},
+			"properties": {
+				"title":  "Musuem Bar",
+				"address":  "4445 Lindell Blvd"
+			}
+		}
+	]
+}
+
