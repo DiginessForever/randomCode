@@ -1,0 +1,23 @@
+Instructions:
+
+1.  First install ffmpeg and ffserver, as well as video4linux, if necessary.
+2.  Grab the file ffserver.conf from this repo.
+3.  Run this command to start an ffserver using the
+configuration file "ffserver.conf":
+sudo ffserver -f <path to ffserver.conf>
+4.  Run this command to send a feed from your webcam to the ffserver (it will be hosted locally - if you want it on the web, you'll have to open a port on the router and on your system's firewall):
+ffmpeg -f v4l2 -vcodec mjpeg -input_format mjpeg -r 30 -i /dev/video0 http://127.0.0.1:8090/feed1.ffm
+(you may have to add "sudo" before the above command, depending on your system settings)
+
+Note:  If the above command does not work, it's likely that your webcam does not have the same formats available, or is at a different driver/module address (driver here is /dev/video, format is mjpeg, and I'm selecting a framerate of 30)
+
+In order to see what your devices have available to stream, use these commands (this is on a Linux system):
+1.  v4l2-ctl --list-devices
+2.  ffmpeg -f v4l2 -list_formats all -i /dev/video0
+substitute a different device path in the place of /dev/video0 in command 2 above if command 1 (the one with --list-devices) has a different path for your webcam or camera.
+
+Finally, in order to open this on your browser, first open your favorite browser (I'm using Firefox) and type the following in your address bar:  
+http://127.0.0.1:8090/test.mjpg
+
+Note:  It is possible to add more to the config file so that you can stream multiple formats.  Each format will have a different filename you have to type in the place of "test.mjpg" in the address above.
+See the notes file for all the various commands I tried (they were mostly failures) and a lot of the reference webpages I read through (will give more pointers for more things that can be added).

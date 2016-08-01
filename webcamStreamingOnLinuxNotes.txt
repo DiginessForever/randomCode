@@ -1,0 +1,211 @@
+Streaming video on Linux:
+Reference 1:  https://trac.ffmpeg.org/wiki/Capture/Webcam
+
+Notes:
+Assumptions:  I am on Fedora.  When I type a command, if it is not found on my local system, it does some kind of checking, and if it's a command in a repository that is available, it asks me if I want to install that package - very convenient.
+1.  Type "v4l2-ctl" in the terminal, hit enter.  It didn't find it, asked if I wanted to install it.  I answered yes:
+Install package 'v4l-utils' to provide command 'v4l2-ctl'? [N/y] y
+ * Waiting in queue... 
+The following packages have to be installed:
+ libdvbv5-1.6.2-1.fc22.x86_64	Libraries to control, scan and zap on Digital TV channels
+Proceed with changes? [N/y] y
+2.  Typing the command again gives the help for that command - what command options/arguments are available.
+3.  v4l2-ctl --list-devices
+This command gives a list of devices available.  On my laptop, I have one webcam (above the screen).  Here's what mine shows after typing the command:
+TOSHIBA Web Camera - HD (usb-0000:00:13.2-2):
+	/dev/video0
+4.  v4l2-ctl --list-formats-ext
+This command lists all the formats available from available devices.  Here's what mine shows after typing the command:
+ioctl: VIDIOC_ENUM_FMT
+	Index       : 0
+	Type        : Video Capture
+	Pixel Format: 'YUYV'
+	Name        : YUYV 4:2:2
+		Size: Discrete 640x480
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 640x360
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 320x240
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 424x240
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 320x180
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 848x480
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 960x540
+			Interval: Discrete 0.100s (10.000 fps)
+			Interval: Discrete 0.200s (5.000 fps)
+		Size: Discrete 1280x720
+			Interval: Discrete 0.100s (10.000 fps)
+			Interval: Discrete 0.200s (5.000 fps)
+
+	Index       : 1
+	Type        : Video Capture
+	Pixel Format: 'MJPG' (compressed)
+	Name        : Motion-JPEG
+		Size: Discrete 640x480
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 640x360
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 320x240
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 424x240
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 320x180
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 848x480
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 960x540
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+		Size: Discrete 1280x720
+			Interval: Discrete 0.033s (30.000 fps)
+			Interval: Discrete 0.067s (15.000 fps)
+
+5.  v4l2-ctl -L
+This command shows the webcam options.  The next command lets you pass option values to the webcam to change them from the defaults.
+Here's what it showed when I typed this command:
+                     brightness (int)    : min=0 max=100 step=1 default=50 value=50
+                       contrast (int)    : min=0 max=100 step=1 default=32 value=32
+                     saturation (int)    : min=0 max=128 step=1 default=64 value=64
+                            hue (int)    : min=-40 max=40 step=1 default=0 value=0
+ white_balance_temperature_auto (bool)   : default=1 value=1
+                          gamma (int)    : min=72 max=500 step=1 default=100 value=100
+           power_line_frequency (menu)   : min=0 max=2 default=1 value=1
+				0: Disabled
+				1: 50 Hz
+				2: 60 Hz
+      white_balance_temperature (int)    : min=2800 max=6500 step=1 default=4600 value=4600 flags=inactive
+                      sharpness (int)    : min=0 max=6 step=1 default=3 value=3
+         backlight_compensation (int)    : min=0 max=1 step=1 default=0 value=0
+         exposure_auto_priority (bool)   : default=0 value=1
+                     brightness (int)    : min=0 max=100 step=1 default=50 value=50
+                       contrast (int)    : min=0 max=100 step=1 default=32 value=32
+                     saturation (int)    : min=0 max=128 step=1 default=64 value=64
+                            hue (int)    : min=-40 max=40 step=1 default=0 value=0
+ white_balance_temperature_auto (bool)   : default=1 value=1
+                          gamma (int)    : min=72 max=500 step=1 default=100 value=100
+           power_line_frequency (menu)   : min=0 max=2 default=1 value=1
+				0: Disabled
+				1: 50 Hz
+				2: 60 Hz
+      white_balance_temperature (int)    : min=2800 max=6500 step=1 default=4600 value=4600 flags=inactive
+                      sharpness (int)    : min=0 max=6 step=1 default=3 value=3
+         backlight_compensation (int)    : min=0 max=1 step=1 default=0 value=0
+6.  v4l2-ctl -c <option>=<value>
+Substitute the name of the option from the above list (or the one you get) where <option> is in the command above.
+Substitute a number in the range for that option in the list above where <value> is in the command, in order to change the value from the default.
+
+7.  Next reference:  https://ffmpeg.org/ffmpeg-all.html#video4linux2_002c-v4l2
+Interesting note:  The "xdpyinfo" command gives properties of the screen (X11 display - I'm using gnome display manager on Fedora (gdm).
+
+8.  Next reference:  http://tips4linux.com/viewing-a-webcam-with-mplayer-in-linux/
+Trying to display the webcam input from the v4l command using mplayer.  Didn't have mplayer installed, installed it (it asked me if I wanted to, and I typed 'y').
+mplayer -cache 128 -tv driver=v4l:width=640:height=480:outfmt=i420 -vc rawi420 -vo xv tv://
+This command did not work, but it got me to my next reference (I don't have a lirac device / tv tuner - just a webcam).
+http://www.linuxquestions.org/questions/linux-software-2/adjusting-v4l2-settings-after-launching-mplayer-to-framebuffer-in-console-4175493692/
+And this command from that page:  mplayer -tv driver=v4l2:device=/dev/video0 tv://
+That popped up the video stream from my webcam directly to the screen!
+For more mplayer options, go to:  http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html
+
+9.  Next reference:  this from a search on "accessing /dev/video0 with html5 MPJG":
+http://stackoverflow.com/questions/12257762/real-time-streaming-to-html5-with-out-webrtc-just-using-video-tag
+Command:  ffmpeg -f video4linux2 -standard ntsc -i /dev/video0 http://<server_ip>:8090/0.ffm
+This is for serving up the video to the browser...
+Note:  I still need to fully setup ffserver in order for this to work - ffmpeg sends the output in the format desired to ffserver, which serves
+it up on a port.
+
+10.  Other possibilities to get / stream the video:  gstreamer, webrtc/websockets (from within the browser:  navigator.*, user.media())
+Note, with gstreamer, you have to use a capture program -o option, pipe it to the gstreamer command with "|".
+
+11.  This command brings up a full screen with webcam stream:  
+ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
+
+12.  Another option to get /dev/video0 and serve it up to the web is "webcam-server".  Apt-get install webcam-server (if on Ubuntu...didn't find it
+for Fedora).
+https://www.linux.com/news/five-fun-ways-use-linux-webcam   (this talks about other open source tools too, like ZoneMinder for managing / viewing
+multiple webcams in your house)
+Note:  can use ffmpeg to merge multiple images into a single one (can you do this with multiple video streams / merge to a single stream?)
+
+
+Setting up ffserver:
+1.  http://www.ffmpeg.org/sample.html  For copying onto /etc/ffserver.conf   (note, after I installed ffserver, /etc/ffserver.conf did not exist,
+so I "cd /etc", "sudo touch ffserver.conf", "nano ffserver.conf", and copied the contents of the sample from the reference URL into it.
+Note that the ACL (Access Control List) line in this configuration file (/etc/ffserver.conf) only allows connections from the local machine.
+I modified the filenames for the streams in the /etc/ffserver.conf file: I made the mpg stream "stream2.ffm" and the mjpg stream "stream1.ffm".
+I uncommented (removed the leading "#" characters on the lines) the mjpg stream defintion (from the <stream> to the </stream> lines).
+Here's another reference with command help:  https://ffmpeg.org/ffserver.html#How-do-I-make-it-work_003f
+From the reference:
+ffserver -f doc/ffserver.conf &
+ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
+
+I modified that to use my setup:
+ffserver -f /etc/ffserver.conf & ffmpeg -i /dev/video0 http://localhost:8888/feed1.ffm
+(now we can should be able to open a browser and type "http://localhost:8888/feed1.ffm" in the address field to view the webcam feed...)
+Problem:  At first it scrolls a lot of configuration text and starts the webcam (as indicated by the light on the webcam turning on, but then
+encounters an error with the networking:
+Connection to tcp://localhost:8888 failed: Connection refused
+http://localhost:8888/feed1.ffm: Connection refused
+
+sudo ffserver -d -f /etc/ffserver.conf & ffmpeg -i /dev/video0 http://127.0.0.1:8888/feed1.ffm    (the -d is for debugging info)
+Now getting port (8888) already in use...and:
+Missing audio stream which is required by this ffm
+
+Switched conf file back to port 8090, changed command to 8090:
+sudo ffserver -d -f /etc/ffserver.conf & ffmpeg -i /dev/video0 http://127.0.0.1:8090/feed1.ffm
+
+The port in use error went away, but still have audio required error, and it fails to start...
+On trying to start it again, I get port already in use...this is a problem - I need to have a way to flush the port!
+
+Minified the .conf file...copied to my randomCode directory.
+
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -i /dev/video0 http://127.0.0.1:8090/feed1.ffm
+
+sudo ffmpeg -f v4l2 -s 320x240 -r 25 -i /dev/video0 -f pulse -i default http://localhost:8090/feed1.ffm
+The above works to get past the sound problem.  However, it has a problem with ffmpeg not getting the right video format
+(bitrate, framesize, etc).  Also, I am no longer pointing at my .conf file in randomCode...
+v4l2-ctl --list-formats-ext  (to get list of formats from the video camera again)
+
+
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -i /dev/video0 -f pulse -i default http://127.0.0.1:8090/feed1.ffm
+Combined the prior commands into one.
+I think I'll still have format problems...also seeing some port connection issues...
+Error while opening encoder for output stream #0:1 - maybe incorrect parameters such as bit_rate, rate, width or height
+
+This is another way of showing the formats available from /dev/video0, using ffmpeg:
+sudo ffmpeg -f v4l2 -list_formats all -i /dev/video
+
+This lets me save to file:  ffmpeg -f v4l2 -framerate 25 -video_size 320x240 -i /dev/video0 output.mjpeg
+
+Trying again, using arguments from above:
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -i /dev/video0 -f pulse -i default http://127.0.0.1:8090/feed1.ffm
+
+Here's the proper bitrate for voice recording:  ffmpeg -f alsa -ac 2 -ar 44100 -i loopout out.wav
+Changing that to my command:
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -i /dev/video0 -f pulse -ar 44100 -i default http://127.0.0.1:8090/feed1.ffm
+-ar is audio sample rate, and -ac is audio channels (on pulse (not sure about pulse) or alsa)
+
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -map 0:2 -i /dev/video0 -f pulse -ar 44100 -i default http://127.0.0.1:8090/feed1.ffm
+
+
+Ugh:  Error while opening encoder for output stream #0:1 - maybe incorrect parameters such as bit_rate, rate, width or height
+http://stackoverflow.com/questions/8367342/error-while-opening-encoder-for-output-stream-01-maybe-incorrect-parameters
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -vcodec mjpeg -i /dev/video0 -f pulse -ar 44100 -i default http://127.0.0.1:8090/feed1.ffm
+
+sudo ffserver -d -f /home/DiginessForever/randomCode/ffserver.conf & ffmpeg -f v4l2 -s 320x240 -r 25 -c:v mjpeg -i /dev/video0 -f pulse -ar 44100 -i default http://127.0.0.1:8090/feed1.ffm
+
+
+
+
