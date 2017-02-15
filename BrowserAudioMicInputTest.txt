@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <!--<script type="text/javascript">-->
+</head>
+<body>
+        <label id="messageLabel" text=""></label>
+        <div>
+                <canvas id="myCanvas" width="512" height="256"></canvas>
+        </div>
+        <script>
+                /*
+                   	These are the resources I used to find this code:
+			https://developers.google.com/web/updates/2012/09/Live-Web-Audio-Input-Enabl
+				ed
+			https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualization
+				s_with_Web_Audio_API
+			https://www.html5rocks.com/en/tutorials/webaudio/intro/
+			https://www.html5rocks.com/en/tutorials/getusermedia/intro/
+                        http://www.phpied.com/webaudio-live-input/
+			http://stackoverflow.com/questions/5845306/how-do-i-access-navigator-getuser
+				media
+			https://dev.opera.com/articles/playing-with-html5-video-and-getusermedia/
+			http://stackoverflow.com/questions/24340531/microphone-to-speaker-stream-js
+                */
+
+                navigator.getUserMedia = (navigator.getUserMedia ||
+			navigator.webkitGetUserMedia || navigator.mozGetUserMedia ||
+			navigator.msGetUserMedia || window.AudioContext);
+		//The above is from one example, the window.AudioContext is from another
+
+                //Just setting the main variables used below as global to this script so that they can be accessed within the various methods.
+                var aCtx;
+                var analyser;
+                var bufferLength;
+                var dataArray;
+                var microphone;
+
+                if (navigator.getUserMedia) {
+                        navigator.getUserMedia({audio: true}, function(stream){
+                                try {
+                                        //aCtx = new webkitAudioContext();
+                                        aCtx = new AudioContext();
+                                }
+                                catch (error){
+					document.getElementById('messageLabel').innerText = 'Web Audio API is not
+						supported by this browser.  ' +error.message;
+                                        //alert('error creating audio
+					context, web audio API may not be enabled on this browser:  ' + error.message);
+                                }
+                                microphone =
+				aCtx.createMediaStreamSource(stream);
+                                analyser = aCtx.createAnalyser();
+                                microphone.connect(analyser);
+                                //microphone.connect(analyzer);  //.connect will hook up one block to another to create a pipeline.
+                                //analyzer.connect(aCtx.destination);
+                                graphTheStream(aCtx, microphone);
+                                //microphone.connect(aCtx.destination);
+
+				document.getElementById('messageLabel').innerText = 'I think I am streaming.';
+                                console.log("Streaming...");
+                        }, function(){console.warn("Error getting audio stream from getUserMedia")});
+                }
+                else {
+                        document.getElementById('messageLabel').innerText = 'navigator.getUserMedia was undefined - no audio input found.';
+                }
+
+                function graphTheStream(){
+                        //Documentation resource: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualization
+			//s_with_Web_Audio_API
+                        if (aCtx){
+                                analyser = aCtx.createAnalyser();
+                                console.log("analyser created.");
+                        } else {
+				document.getElementById('messageLabel').innerText = 'aCtx was undefined - no audio?';
+                        }
+                        if (analyser && microphone){
+                                microphone.connect(analyser);
+                                analyser.fftSize = 512; //Making it lower than the default 2048 to try to make this faster so it will become
+							//responsive...
+                                bufferLength = analyser.frequencyBinCount;
+                                console.log("microphone connected to analyzer, fftsize set, bufferlength set.");
+                        } else {
+				document.getElementById('messageLabel').innerText = 'analyser or microphone was undefined - could not proceed.';
+                        }
+                        if (bufferLength){
+                                dataArray = new Uint8Array(bufferLength);
+				//set aside an area of memory of the appropriate size
+                                console.log("dataArray created.  Length: " + dataArray.length);
+                        } else {
+				document.getElementById('messageLabel').innerText = 'bufferLength not defined.';
+                        }
+                        if (analyser && dataArray){
+                        	iteration = 0;
+                        	//while(true){  //Going to run it once only.
+                                analyser.getByteTimeDomainData(dataArray);
+				//fill the data array with values from the fft.
+                                console.log("dataArray populated with data from analyser.");
+				document.getElementById('messageLabel').innerText = 'iteration: ' + iteration;
+                                var mainCanvas = document.getElementById("myCanvas");
+                                var canvasContext = mainCanvas.getContext('2d');
+                                WIDTH = mainCanvas.width;
+                                HEIGHT = mainCanvas.height;
+                                canvasContext.fillStyle = 'rgb(200,200,200)';
+                                        canvasContext.strokeStyle = 'rgb(0, 255, 0)';
+                                        canvasContext.lineWidth = 2;
+                                canvasContext.clearRect(0, 0, WIDTH, HEIGHT);
+                                canvasContext.fillRect(0, 0, WIDTH, HEIGHT);
+                                canvasContext.beginPath();
+                                console.log("canvas prepped.");
+                                draw();
+                                iteration++;
+                        //}
+                        } else {
+				document.getElementById('messageLabel').innerText = 'analyser or dataArray not defined.';
+                        }
+                }
+
+                //function draw(dataArray, bufferLength){
+                function draw(){
+                        var mainCanvas = document.getElementById("myCanvas");
+                        var canvasContext = mainCanvas.getContext('2d');
+                        var x = 0;
+                        var sliceWidth = mainCanvas.width * 1.0 / bufferLength;
+
+                        for (var i = 0; i < bufferLength; i++){
+                                var v = dataArray[i] / 128.0;  //not sure about this line, what is it doing?
+                                console.log("v: " + v);
+                                var y = v * mainCanvas.height / 2;
+
+                                if (i === 0) {
+                                        canvasContext.moveTo(x, y);
+                                } else {
+                                        canvasContext.lineTo(x, y);
+                                }
+
+                                x += sliceWidth;
+                                canvasContext.stroke();
+                        }
+                        console.log("canvas should show entries, done with draw().");
+                }
+        </script>
+</body>
+</html>
