@@ -1,3 +1,5 @@
+Note:  I am not the Leaflet designer/developer.  I am just a simple programmer who is using that API.
+
 The below is the documentation of Leaflet GeoCSV.  So far, I've gotten basic leaflet mapping functionality working, and now also can import geoJSON files.  I still need to have an actual marker show up for each location in the geoJSON data file (currently it just shows a transparent square as a marker).  Other changes that can be made would be to assign different locations to different layers and have a layer control, and to import the geoJSON from an online URL with a feed that gets updated at intervals (currently I am loading these files from my local filesystem, which led to some of the early technical difficulties).  Finally, I need to use geoCSV to convert from csv to geoJSON, then import to the map - trying to make it as easy as possible to use.
 
 
